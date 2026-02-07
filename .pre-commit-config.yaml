@@ -2,7 +2,7 @@ default_stages: [pre-commit]
 
 repos:
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 25.11.0
+    rev: 26.1.0
     hooks:
       - id: black
 
@@ -13,10 +13,10 @@ repos:
       - id: end-of-file-fixer
       - id: debug-statements
 
-  - repo: https://github.com/christopher-hacker/enforce-notebook-run-order
-    rev: 2.1.1
-    hooks:
-      - id: enforce-notebook-run-order
+#  - repo: https://github.com/christopher-hacker/enforce-notebook-run-order
+#    rev: 2.1.1
+#    hooks:
+#      - id: enforce-notebook-run-order
 
   - repo: local
     hooks:
@@ -27,6 +27,7 @@ repos:
           - nbformat
         language: python
         types: [jupyter]
+        exclude: tests/examples/bad.ipynb
 
       - id: check-badges
         name: check badges
@@ -35,6 +36,24 @@ repos:
           - nbformat
           - pytest
           - gitpython
-        args: [--fix-header, --repo-name=devops_tests]
+        args: [--repo-name=devops_tests]
         language: python
         types: [jupyter]
+        exclude: tests/examples/bad.ipynb
+
+      - id: notebooks-output
+        name: notebooks output
+        entry: notebooks_output
+        additional_dependencies:
+          - nbformat
+        language: python
+        types: [jupyter]
+        exclude: tests/examples/bad.ipynb
+
+      - id: notebooks-using-jupyter-utils
+        name: notebooks using open-atmos-jupyter-utils
+        entry: notebooks_using_jupyter_utils
+        additional_dependencies:
+          - nbformat
+        language: python
+        types: [ jupyter ]

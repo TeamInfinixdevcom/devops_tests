@@ -34,7 +34,7 @@ jobs:
           pip install pre-commit
           pre-commit clean
           pre-commit autoupdate
-          pre-commit run --all-files
+          pre-commit run --files $(git ls-files | grep -v tests/examples/bad.ipynb)
 
   selftest:
     needs: [pylint, precommit]

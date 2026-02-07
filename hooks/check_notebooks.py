@@ -1,73 +1,9 @@
 #!/usr/bin/env python3
-"""
-Checks notebook execution status for Jupyter notebooks"""
+# pylint: disable=missing-module-docstring
 from __future__ import annotations
 
-import argparse
 from collections.abc import Sequence
-
-import nbformat
-
-
-class NotebookTestError(Exception):
-    """Raised when a notebook validation test fails."""
-
-
-def test_cell_contains_output(notebook):
-    """checks if all notebook cells have an output present"""
-    for cell in notebook.cells:
-        if cell.cell_type == "code" and cell.source != "":
-            if cell.execution_count is None:
-                raise ValueError("Cell does not contain output!")
-
-
-def test_no_errors_or_warnings_in_output(notebook):
-    """checks if all example Jupyter notebooks have clear std-err output
-    (i.e., no errors or warnings) visible; except acceptable
-    diagnostics from the joblib package"""
-    for cell in notebook.cells:
-        if cell.cell_type == "code":
-            for output in cell.outputs:
-                if "name" in output and output["name"] == "stderr":
-                    if not output["text"].startswith("[Parallel(n_jobs="):
-                        raise ValueError(output["text"])
-
-
-def test_show_plot_used_instead_of_matplotlib(notebook):
-    """checks if plotting is done with open_atmos_jupyter_utils show_plot()"""
-    matplot_used = False
-    show_plot_used = False
-    for cell in notebook.cells:
-        if cell.cell_type == "code":
-            if "pyplot.show(" in cell.source or "plt.show(" in cell.source:
-                matplot_used = True
-            if "show_plot(" in cell.source:
-                show_plot_used = True
-    if matplot_used and not show_plot_used:
-        raise ValueError(
-            "if using matplotlib, please use open_atmos_jupyter_utils.show_plot()"
-        )
-
-
-def test_show_anim_used_instead_of_matplotlib(notebook):
-    """checks if animation generation is done with open_atmos_jupyter_utils show_anim()"""
-    matplot_used = False
-    show_anim_used = False
-    for cell in notebook.cells:
-        if cell.cell_type == "code":
-            if (
-                "funcAnimation" in cell.source
-                or "matplotlib.animation" in cell.source
-                or "from matplotlib import animation" in cell.source
-            ):
-                matplot_used = True
-            if "show_anim(" in cell.source:
-                show_anim_used = True
-    if matplot_used and not show_anim_used:
-        raise AssertionError(
-            """if using matplotlib for animations,
-            please use open_atmos_jupyter_utils.show_anim()"""
-        )
+from .utils import open_and_test_notebooks
 
 
 def test_jetbrains_bug_py_66491(notebook):
@@ -84,28 +20,12 @@ def test_jetbrains_bug_py_66491(notebook):
 
 def main(argv: Sequence[str] | None = None) -> int:
     """test all notebooks"""
-    parser = argparse.ArgumentParser()
-    parser.add_argument("filenames", nargs="*", help="Filenames to check.")
-    args = parser.parse_args(argv)
-
-    retval = 0
-    test_functions = [
-        test_cell_contains_output,
-        test_no_errors_or_warnings_in_output,
-        test_jetbrains_bug_py_66491,
-        test_show_anim_used_instead_of_matplotlib,
-        test_show_plot_used_instead_of_matplotlib,
-    ]
-    for filename in args.filenames:
-        with open(filename, encoding="utf8") as notebook_file:
-            notebook = nbformat.read(notebook_file, nbformat.NO_CONVERT)
-            for func in test_functions:
-                try:
-                    func(notebook)
-                except NotebookTestError as e:
-                    print(f"{filename} : {e}")
-                    retval = 1
-    return retval
+    return open_and_test_notebooks(
+        argv=argv,
+        test_functions=[
+            test_jetbrains_bug_py_66491,
+        ],
+    )
 
 
 if __name__ == "__main__":

@@ -4,8 +4,13 @@ Utils functions to reuse in different parts of the codebase
 
 import os
 import pathlib
-
+import argparse
 from git import Git
+import nbformat
+
+
+class NotebookTestError(BaseException):
+    """Raised when a notebook validation test fails."""
 
 
 def find_files(path_to_folder_from_project_root=".", file_extension=None):
@@ -28,18 +33,28 @@ def find_files(path_to_folder_from_project_root=".", file_extension=None):
     return all_files
 
 
-def relative_path(absolute_path, repo_name):
-    """returns a path relative to the repo base (converting backslashes to slashes on Windows)"""
-    relpath = os.path.relpath(absolute_path, repo_name)
-    posixpath_to_make_it_usable_in_urls_even_on_windows = pathlib.Path(
-        relpath
-    ).as_posix()
-    return posixpath_to_make_it_usable_in_urls_even_on_windows
-
-
 def repo_path():
     """returns absolute path to the repo base (ignoring .git location if in a submodule)"""
     path = pathlib.Path(__file__)
     while not (path.is_dir() and Git(path).rev_parse("--git-dir") == ".git"):
         path = path.parent
     return path
+
+
+def open_and_test_notebooks(argv, test_functions):
+    """Create argparser and run notebook tests"""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("filenames", nargs="*", help="Filenames to check.")
+    args = parser.parse_args(argv)
+
+    retval = 0
+    for filename in args.filenames:
+        with open(filename, encoding="utf8") as notebook_file:
+            notebook = nbformat.read(notebook_file, nbformat.NO_CONVERT)
+            for func in test_functions:
+                try:
+                    func(notebook)
+                except NotebookTestError as e:
+                    print(f"{filename} : {e}")
+                    retval = 1
+    return retval
